@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import division
 
 
@@ -45,11 +46,11 @@ from numpy.linalg import inv,det
 class Gaussian:
 	def __init__(self,u = None,sig = None,w=1):
 		warnings.filterwarnings("ignore")
-		if(u == None):
+		if(u is None):
 			self.mean = [0,0];
 		else:
 			self.mean = u;
-		if(sig == None):
+		if(sig is None):
 			self.sig = [[1,0],[0,1]];
 		else:
 			self.var = sig;

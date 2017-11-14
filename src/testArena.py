@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 ***************************************************
 File: testArena.py
@@ -41,6 +42,31 @@ def euclidSquared(mix_i,mix_j):
 	#dist = np.sqrt(dist);
 	return dist;
 
+
+def KLD(mix_i,mix_j):
+	"""
+	Computes the Kullback-Leibler Divergence between two multivariate normal distributions
+	"""
+
+	new_mix_i = deepcopy(mix_i)
+	new_mix_j = deepcopy(mix_j)
+
+	# term1 = np.trace(np.m)
+
+	# print('det mix j var = {}'.format(np.linalg.det(mix_j.var)))
+	# print('det mix i var = {}'.format(np.linalg.det(mix_i.var)))
+	# try:
+		# val = np.linalg.inv(mix_j.var)
+	# except np.linalg.linalg.LinAlgError as e:
+		# print('mix j means: {}'.format(mix_j.mean))
+		# print('mix j var: {}'.format(mix_j.var))
+	# print(np.linalg.inv(mix_j.var))
+
+	div = 0.5*(np.trace(np.dot(np.linalg.inv(new_mix_j.var),new_mix_i.var)) + np.dot(np.dot(np.transpose(np.subtract(new_mix_j.mean,new_mix_i.mean)) \
+				,np.linalg.inv(new_mix_j.var)),(np.subtract(new_mix_j.mean,new_mix_i.mean))) \
+				- len(new_mix_j.mean) + np.log(np.linalg.det(new_mix_j.var)/np.linalg.det(new_mix_i.var)))
+
+	return div
 
 #main testing function
 def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
@@ -126,7 +152,8 @@ if __name__ == '__main__':
 	#Testing Parameters:
 	dims = 2; 
 	startNum = 100; 
-	distanceMeasure = euclidianMeanDistance;
+	# distanceMeasure = euclidianMeanDistance;
+	distanceMeasure = KLD;
 	intermediate_mixture_size = 4; 
 	finalNum = 5; 
 
