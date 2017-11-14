@@ -19,7 +19,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2016, Cohrint"
 __credits__ = ["Luke Burks", "Nisar Ahmed"]
 __license__ = "GPL"
-__version__ = "1.3.2"
+__version__ = "1.3.4"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -45,11 +45,11 @@ from numpy.linalg import inv,det
 class Gaussian:
 	def __init__(self,u = None,sig = None,w=1):
 		warnings.filterwarnings("ignore")
-		if(u == None):
+		if(u is None):
 			self.mean = [0,0];
 		else:
 			self.mean = u;
-		if(sig == None):
+		if(sig is None):
 			self.sig = [[1,0],[0,1]];
 		else:
 			self.var = sig;
