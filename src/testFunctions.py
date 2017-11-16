@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 ***************************************************
 File: testFunctions.py
@@ -66,7 +67,7 @@ def cluster(mixture,distanceFunc,k=4,maxIter = 100):
 	lowInit = [0]*mixDims; 
 	highInit = [10]*mixDims; 
 
-	means = [0]*k; 
+	means = [1]*k; 
 	for i in range(0,k):
 		tmp = []; 
 		#get a random mean
@@ -79,42 +80,60 @@ def cluster(mixture,distanceFunc,k=4,maxIter = 100):
 		c = (b+b.T)/2; 
 		d = c.flatten().tolist(); 
 		for j in range(0,len(d)):
-			tmp.append(d[j]); 
+			tmp.append(d[j]); 	
 		means[i] = tmp; 
 
 
 	converge = False; 
 	count = 0; 
-	newMeans = [0]*k; 
+	newMeans = [1]*k; 
 
 	while(not converge and count < maxIter):
 		clusters = [GM() for i in range(0,k)]; 
 		for g in mixture:
 			#put the gaussian in the cluster which minimizes the distance between the distribution mean and the cluster mean
-			clusters[np.argmin([distanceFunc(g,convertListToNorm(means[j])) for j in range(0,k)])].addG(g); 
+			clusters[np.argmin([distanceFunc(g,convertListToNorm(means[j])) for j in range(0,k)])].addG(g);
 
 		#find the new mean of each cluster
 		newMeans = [0]*k; 
-		for i in range(0,k):
+
+		for i in range(0,4):
 			newMeans[i] = np.array([0]*mixDims); 
 			for g in clusters[i]:
-				newMeans[i] = np.add(newMeans[i],np.divide(convertNormToList(g),clusters[i].size)); 
-
+				newMeans[i] = np.add(newMeans[i],np.divide(convertNormToList(g),clusters[i].size));
+		
 		#check for convergence
 		if(np.array_equal(means,newMeans)):
 			converge = True;
 		count = count+1;
 
-		means = deepcopy(newMeans); 
-
+		for i in range(0,k):
+			if not newMeans[i].all() == 0: 
+				means[i] = newMeans[i]
+			else:
+				tmp = []; 
+				#get a random mean
+				for j in range(0,len(mixture[0].mean)):
+					tmp.append(np.random.random()*(highInit[j]-lowInit[j]) + lowInit[j]); 
+				#get a random covariance
+				#MUST BE POSITIVE SEMI DEFINITE and symmetric
+				a = scirand.rand(len(mixture[0].var),len(mixture[0].var))*5; 
+				b = np.dot(a,a.transpose()); 
+				c = (b+b.T)/2; 
+				d = c.flatten().tolist(); 
+				for j in range(0,len(d)):
+					tmp.append(d[j]); 
+				# print('tmp: {}'.format(tmp))	
+				means[i] = tmp;
 	return clusters;
 
 def conComb(mixtures,max_num_mixands):
 	newMix = GM(); 
 	for gm in mixtures:
-		c = deepcopy(condense(gm,max_num_mixands)); 
-		if(c.size > 0):
-			newMix.addGM(c); 
+		d = deepcopy(condense(gm,max_num_mixands)); 
+		# NOTE: this comment apparently needs to be here to not make d an int...
+		if(d.size > 0):
+			newMix.addGM(d); 
 	return newMix; 
 
 
