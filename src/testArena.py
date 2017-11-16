@@ -68,6 +68,37 @@ def KLD(mix_i,mix_j):
 
 	return div
 
+def JSD(mix_i,mix_j):
+	"""
+	Computes the Jensen-Shannon divergence between two multivarite normal distributions using
+	the Kullback-Leibler Divergence
+
+	JSD(I || J) = 0.5*D(I || M) + 0.5*D(J || M)
+	M = 0.5*(I + J)
+	"""
+
+	new_mix_i = deepcopy(mix_i)
+	new_mix_j = deepcopy(mix_j)
+
+	# compute M = 0.5 * (I + J)
+	new_mean = np.multiply(0.5,np.add(new_mix_i.mean, new_mix_j.mean))
+	new_var = np.multiply(0.25,np.add(new_mix_i.var, new_mix_j.var))
+	new_mix_m = Gaussian(new_mean,new_var)
+
+
+	# D(I || M)
+	div1 = 0.5*(np.trace(np.dot(np.linalg.inv(new_mix_m.var),new_mix_i.var)) + np.dot(np.dot(np.transpose(np.subtract(new_mix_m.mean,new_mix_i.mean)) \
+				,np.linalg.inv(new_mix_m.var)),(np.subtract(new_mix_m.mean,new_mix_i.mean))) \
+				- len(new_mix_m.mean) + np.log(np.linalg.det(new_mix_m.var)/np.linalg.det(new_mix_i.var)))
+
+	# D(J || M)
+	div2 = 0.5*(np.trace(np.dot(np.linalg.inv(new_mix_m.var),new_mix_j.var)) + np.dot(np.dot(np.transpose(np.subtract(new_mix_m.mean,new_mix_j.mean)) \
+				,np.linalg.inv(new_mix_m.var)),(np.subtract(new_mix_m.mean,new_mix_j.mean))) \
+				- len(new_mix_m.mean) + np.log(np.linalg.det(new_mix_m.var)/np.linalg.det(new_mix_j.var)))
+
+	div = (0.5*div1) + (0.5*div2)
+	return div
+
 #main testing function
 def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	startMix = deepcopy(mix); 
@@ -102,10 +133,10 @@ def plotResults(start,end):
 
 	fig,axarr = plt.subplots(2); 
 
-	im1 = axarr[0].contourf(xBefore,yBefore,cBefore); 
+	im1 = axarr[0].contourf(xBefore,yBefore,cBefore,cmap='viridis'); 
 	axarr[0].set_title('Original')
 
-	im2 = axarr[1].contourf(xAfter,yAfter,cAfter); 
+	im2 = axarr[1].contourf(xAfter,yAfter,cAfter,cmap='viridis'); 
 	axarr[1].set_title('ISD:{}'.format(start.ISD(end))); 
 	  
 	plt.suptitle("Condensation from 200 to 40 mixands"); 
@@ -153,12 +184,23 @@ if __name__ == '__main__':
 	dims = 2; 
 	startNum = 100; 
 	# distanceMeasure = euclidianMeanDistance;
-	distanceMeasure = KLD;
+	# distanceMeasure = KLD;
+	distanceMeasure = JSD;	
 	intermediate_mixture_size = 4; 
 	finalNum = 5; 
 
 	#Create Test Mixture from params
 	testMix = createRandomMixture(startNum,dims); 
+
+	#Run tests
+	results = [];
+	results.append(theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum));  
+
+	#Save/display results
+	plotResults(testMix,results[0]);
+	print(testMix.ISD(results[0])); 
+
+	distanceMeasure = KLD;
 
 	#Run tests
 	results = [];
