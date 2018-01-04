@@ -131,9 +131,15 @@ def conComb(mixtures,max_num_mixands):
 	newMix = GM(); 
 	for gm in mixtures:
 		d = deepcopy(condense(gm,max_num_mixands)); 
+		# print(type(d))
 		# NOTE: this comment apparently needs to be here to not make d an int...
-		if(d.size > 0):
-			newMix.addGM(d); 
+		try:
+			if(d.size > 0):
+				newMix.addGM(d); 
+		except AttributeError as e:
+			# print('throwing out')
+			# print e
+			pass
 	return newMix; 
 
 
@@ -170,9 +176,14 @@ def condense(mixture,max_num_mixands):
 			mixture.size = mixture.size-1;
 
 
-	#Check if merging is useful
+	#Check if merging is useful <>NOTE: this seems to be the spot where things are going south
+	# for a large final number of mixands, condensing is not needed often, and condense returns
+	# 0, an int, which is decidedly not a gaussian mixture
+	# <>TODO: ask Luke what is suppose to happen when codensation is not needed 
 	if mixture.size <= max_num_mixands:
-		return 0;
+		# print('returning')
+		# return 0;
+		return mixture
 
 	# Create lower-triangle of dissimilarity matrix B
 	#<>TODO: this is O(n ** 2) and very slow. Speed it up! parallelize?
@@ -267,7 +278,7 @@ def condense(mixture,max_num_mixands):
 		if(rem in mixture.Gs):
 			mixture.Gs.remove(rem);
 			mixture.size -= 1
-
+	# print(type(mixture))
 	return mixture; 
 
 def merge_mixands(mix_i, mix_j):

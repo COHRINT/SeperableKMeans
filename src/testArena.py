@@ -16,6 +16,9 @@ from __future__ import division
 from gaussianMixtures import GM,Gaussian
 from copy import deepcopy
 import numpy as np
+import time
+import timeit
+import pickle
 from testFunctions import *
 
 
@@ -99,6 +102,71 @@ def JSD(mix_i,mix_j):
 	div = (0.5*div1) + (0.5*div2)
 	return div
 
+def EMD(mix_i,mix_j):
+	"""
+	Computes the Earth Mover's Distance or 2-Wasserstein distance between two normal distributions
+	with means m1 and m2 and covariance matrices C1 and C2
+
+	W_2(mu1,mu2)^2 = ||m1-m2||_2^2 - Tr( sqrt( C1 + C2 - 2( sqrt(C2) C1 sqrt(C2) ) ) )
+
+	See:
+	https://en.wikipedia.org/wiki/Wasserstein_metric
+	https://en.wikipedia.org/wiki/Earth_mover%27s_distance
+	"""
+	new_mix_i = deepcopy(mix_i)
+	new_mix_j = deepcopy(mix_j)
+
+	m1 = new_mix_i.mean
+	m2 = new_mix_j.mean
+	C1 = new_mix_i.var
+	C2 = new_mix_i.var
+
+	# compute 2-norm of means
+	norm2 = np.square( np.linalg.norm( np.subtract(m1,m2) ) )
+
+	mult1 = np.dot( C1,np.sqrt(C2) )
+	mult2 = np.dot( np.sqrt(C2),mult1 )
+
+	# dist = norm2 - np.trace( np.sqrt( np.subtract( np.add(C1,C2), np.dot( 2,np.dot( np.sqrt(C2),np.dot( C1,np.sqrt(C2) ) ) ) ) ) )
+
+	dist = norm2 - np.trace( np.subtract(np.add(C1,C2),np.dot(2,np.sqrt(mult2)) ) ) 
+
+	return dist
+
+def bhatt(mix_i,mix_j):
+	"""
+	Computes the Bhattacharyya distance between two multivariate normal distributions
+	using the Bhattacharyya coefficient.
+
+	D_B = (1/8)(m1-m2)^T Cov (m1-m2) + (1/2)ln( det(C) / sqrt( det(C1)det(C2) ) )
+	Cov = (Cov1 + Cov2)/2
+
+	See:
+	https://en.wikipedia.org/wiki/Bhattacharyya_distance
+	"""
+	new_mix_i = deepcopy(mix_i)
+	new_mix_j = deepcopy(mix_j)
+
+	m1 = new_mix_i.mean
+	m2 = new_mix_j.mean
+	C1 = new_mix_i.var
+	C2 = new_mix_j.var
+	C = np.divide(np.add(C1,C2),2)
+
+	m = np.subtract(m1,m2)
+	m_trans = np.transpose(m)
+	C_det = np.linalg.det(C)
+	C1_det = np.linalg.det(C1)
+	C2_det = np.linalg.det(C2)
+
+	dist = (1/8)*(np.dot( m_trans,np.dot(np.linalg.inv(C),m) )) + \
+			(0.5*np.log(C_det / np.sqrt(C1_det*C2_det)))
+
+	# print(dist)
+	return dist
+
+
+
 #main testing function
 def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	startMix = deepcopy(mix); 
@@ -181,31 +249,75 @@ if __name__ == '__main__':
 
 
 	#Testing Parameters:
-	dims = 2; 
-	startNum = 100; 
-	# distanceMeasure = euclidianMeanDistance;
-	# distanceMeasure = KLD;
-	distanceMeasure = JSD;	
-	intermediate_mixture_size = 4; 
-	finalNum = 5; 
+	dims = [2]; 
+	# startNum = [100,400,700];
+	startNum = [100] 
+	# distanceMeasure = [euclidianMeanDistance];
+	distanceMeasure = [EMD,bhatt]
+	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
+	intermediate_mixture_size = [4]; 
+	# finalNum = [10,30,50]; # 10 30 50
+	finalNum = [10];
+
+	save = False
+
+	results = []
+	isd = []
+	times = []
+
+	total_results = []
+
+	for dim in dims:
+		for num in startNum:
+			testMix = createRandomMixture(num,dim)
+			for mid_num in intermediate_mixture_size:
+				for fin_num in finalNum:
+					for dist in distanceMeasure:
+						t = timeit.default_timer()
+						tmp_result = theArena(testMix,dist,mid_num,fin_num)
+						elapsed = timeit.default_timer() - t
+						results_dict = {}
+						isd_val = testMix.ISD(tmp_result)
+						result = {'dim': dim, 'starting num': num, 'intermediate num': mid_num, 'final num': fin_num, 'measure': dist.__name__, 'time elapsed': elapsed, \
+									'ISD': isd_val,  'test mix': {'means': testMix.getMeans(),'vars': testMix.getVars(),'weights': testMix.getWeights()}, \
+									'result mix': {'means': tmp_result.getMeans(),'vars': tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
+						total_results.append(result)
+						# print(result)
+						plotResults(testMix,tmp_result)
+						print('{} ISD: {}'.format(dist.__name__,isd_val))
+
+	# print total_results
+
+	if save == True:
+		with open('test_file.pickle','wb') as handle:
+			pickle.dump(total_results,handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 	#Create Test Mixture from params
-	testMix = createRandomMixture(startNum,dims); 
+	# testMix = createRandomMixture(startNum,dims); 
 
-	#Run tests
-	results = [];
-	results.append(theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum));  
-
-	#Save/display results
-	plotResults(testMix,results[0]);
-	print(testMix.ISD(results[0])); 
-
-	distanceMeasure = KLD;
-
-	#Run tests
-	results = [];
-	results.append(theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum));  
+	# #Run tests
+	# results = [];
+	# # t = time.time()
+	# t = timeit.default_timer()
+	# tmp_result = theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum)
+	# elapsed = timeit.default_timer() - t
+	# results.append(tmp_result); 
+	# print('Time elapsed: {:.4f} seconds'.format(elapsed)) 
+	# print('Time elapsed: {:.4f} seconds'.format(elapsed1)) 
 
 	#Save/display results
-	plotResults(testMix,results[0]);
-	print(testMix.ISD(results[0])); 
+	# plotResults(testMix,tmp_result);
+	# print('JSD ISD: {}'.format(testMix.ISD(results[0]))); 
+
+	# distanceMeasure = KLD;
+
+	# #Run tests
+	# results = [];
+	# results.append(theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum));  
+
+	# #Save/display results
+	# plotResults(testMix,results[0]);
+	# print('KLD ISD: {}'.format(testMix.ISD(results[0]))); 
+
+	# print('--------------------')
