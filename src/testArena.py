@@ -71,6 +71,22 @@ def KLD(mix_i,mix_j):
 
 	return div
 
+def symKLD(mix_i,mix_j):
+	"""
+	Computes the symmetric Kullback-Leibler Divergence between two multivarite normal distributions.
+	Calls fxn KLD in this file, testArena.py
+
+	D = { KLD(P || Q) + KLD(Q || P) } / 2 
+	""" 
+	
+	new_mix_i = deepcopy(mix_i)
+	new_mix_j = deepcopy(mix_j)
+
+	dist = 0.5*( KLD(new_mix_i,new_mix_j) + KLD(new_mix_j,new_mix_i) )
+
+	return dist 
+
+
 def JSD(mix_i,mix_j):
 	"""
 	Computes the Jensen-Shannon divergence between two multivarite normal distributions using
@@ -169,6 +185,10 @@ def bhatt(mix_i,mix_j):
 
 #main testing function
 def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
+	"""
+	numClusters: number if intermediate clusters
+	finalNum: final number of mixands per cluster
+	"""
 	startMix = deepcopy(mix); 
 
 	#separate
@@ -195,8 +215,8 @@ def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 
 
 def plotResults(start,end):
-	[xBefore,yBefore,cBefore] = start.plot2D(low=[0,0],high=[10,10],vis=False); 
-	[xAfter,yAfter,cAfter] = end.plot2D(low=[0,0],high=[10,10],vis=False); 
+	[xBefore,yBefore,cBefore] = start.plot2D(low=[0,0],high=[50,50],vis=False); 
+	[xAfter,yAfter,cAfter] = end.plot2D(low=[0,0],high=[50,50],vis=False); 
 
 
 	fig,axarr = plt.subplots(2); 
@@ -216,9 +236,9 @@ def createRandomMixture(size = 200,dims = 2):
 	testMix = GM(); 
 
 	lowInit = [0]*dims; 
-	highInit = [5]*dims;
+	highInit = [50]*dims;
 
-	for i in range(0,200):
+	for i in range(0,size):
 		tmp = []; 
 		#get a random mean
 		for j in range(0,dims):
@@ -237,27 +257,46 @@ def createRandomMixture(size = 200,dims = 2):
 		d = c.flatten().tolist(); 
 		for j in range(0,len(d)):
 			tmp.append(d[j]); 
-		weight = np.random.random()*100-50; 
+		weight = np.random.random()*5; 
 		g = convertListToNorm(tmp); 
 		g.weight = weight; 
 		testMix.addG(g); 
 		
-	return testMix; 
+	return testMix;
+
+# def get_data(param_list):
+
+
+
+# def iter_results(d):
+# 		for key, val in d.iteritems():
+# 			if isinstance(val,dict):
+# 				yield from iter_results(val)
+# 			else:
+# 				yield val
+
+def get_pos_mix(mix):
+	pos_mix = GM()
+	for g in mix:
+		if(g.weight >= 0):
+			pos_mix.addG(deepcopy(g))
+	return pos_mix
 
 
 if __name__ == '__main__':
 
 
 	#Testing Parameters:
-	dims = [2]; 
+	dims = [1]; 
 	# startNum = [100,400,700];
+	# srating number of mixands
 	startNum = [100] 
 	# distanceMeasure = [euclidianMeanDistance];
-	distanceMeasure = [EMD,bhatt]
+	distanceMeasure = [symKLD,JSD,euclidianMeanDistance,EMD,bhatt]
 	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
 	intermediate_mixture_size = [4]; 
 	# finalNum = [10,30,50]; # 10 30 50
-	finalNum = [10];
+	finalNum = [3];
 
 	save = False
 
@@ -265,28 +304,65 @@ if __name__ == '__main__':
 	isd = []
 	times = []
 
-	total_results = []
+	total_results = {}
 
-	for dim in dims:
-		for num in startNum:
-			testMix = createRandomMixture(num,dim)
-			for mid_num in intermediate_mixture_size:
-				for fin_num in finalNum:
-					for dist in distanceMeasure:
+	# for dim in dims:
+	# 	for num in startNum:
+	# 		testMix = createRandomMixture(num,dim)
+	# 		for mid_num in intermediate_mixture_size:
+	# 			for fin_num in finalNum:
+	# 				for dist in distanceMeasure:
+	# 					t = timeit.default_timer()
+	# 					tmp_result = theArena(testMix,dist,mid_num,fin_num)
+	# 					elapsed = timeit.default_timer() - t
+	# 					results_dict = {}
+	# 					isd_val = testMix.ISD(tmp_result)
+	# 					result = {'dim': dim, 'starting num': num, 'intermediate num': mid_num, 'final num': fin_num, 'measure': dist.__name__, 'time elapsed': elapsed, \
+	# 								'ISD': isd_val,  'test mix': {'means': testMix.getMeans(),'vars': testMix.getVars(),'weights': testMix.getWeights()}, \
+	# 								'result mix': {'means': tmp_result.getMeans(),'vars': tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
+	# 					total_results[dist.__name__][dim][num][mid_num][fin_num] = (elapsed,isd_val)
+	# 					# total_results.append(result)
+	# 					# print(result)
+	# 					plotResults(testMix,tmp_result)
+	# 					print('{} ISD: {}'.format(dist.__name__,isd_val))
+	for start_num in startNum:
+		total_results[start_num] = {}
+		for dim in dims:
+			testMix = createRandomMixture(start_num,dim)
+			total_results[start_num][dim] = {}
+			for dist in distanceMeasure:
+				total_results[start_num][dim][dist.__name__] = {}
+				for mid_num in intermediate_mixture_size:
+					total_results[start_num][dim][dist.__name__][mid_num] = {}
+					for fin_num in finalNum:
+						# total_results[start_num][dist.__name__][dim][mid_num][fin_num] = {}
 						t = timeit.default_timer()
 						tmp_result = theArena(testMix,dist,mid_num,fin_num)
 						elapsed = timeit.default_timer() - t
-						results_dict = {}
 						isd_val = testMix.ISD(tmp_result)
-						result = {'dim': dim, 'starting num': num, 'intermediate num': mid_num, 'final num': fin_num, 'measure': dist.__name__, 'time elapsed': elapsed, \
-									'ISD': isd_val,  'test mix': {'means': testMix.getMeans(),'vars': testMix.getVars(),'weights': testMix.getWeights()}, \
-									'result mix': {'means': tmp_result.getMeans(),'vars': tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
-						total_results.append(result)
-						# print(result)
-						plotResults(testMix,tmp_result)
-						print('{} ISD: {}'.format(dist.__name__,isd_val))
+						total_results[start_num][dim][dist.__name__][mid_num][fin_num] = \
+							{'time': elapsed,'ISD': isd_val}#, \
+							# 'test mix': {'means': testMix.getMeans(),'vars': \
+							# 	testMix.getVars(),'weights': testMix.getWeights()}, \
+							# 'result mix': {'means': tmp_result.getMeans(),'vars': \
+							# 	tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
+						# plotResults(testMix,tmp_result)
 
 	# print total_results
+	print(total_results)
+
+	for dist in distanceMeasure:
+		for dim in dims:
+			for start_num in startNum:
+				for mid_num in intermediate_mixture_size:
+					for fin_num in finalNum:
+						print('dist: {} \t ISD: {} \t time: {}'.format(dist.__name__,\
+							total_results[start_num][dim][dist.__name__][mid_num][fin_num]['ISD'],\
+							total_results[start_num][dim][dist.__name__][mid_num][fin_num]['time']))
+
+	# print('-----')
+	# print('lowest ISD: {}'.format())
+	
 
 	if save == True:
 		with open('test_file.pickle','wb') as handle:
