@@ -10,7 +10,7 @@ Classes: GM,Gaussian
 Allows for the creation, use, and compression of mixtures
 of multivariate normals, or Gaussian Mixture Models (GMM).
 
-
+Version 1.3.5: added normalized ISD
 
 ***********************************************************
 '''
@@ -20,7 +20,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2016, Cohrint"
 __credits__ = ["Luke Burks", "Nisar Ahmed"]
 __license__ = "GPL"
-__version__ = "1.3.4"
+__version__ = "1.3.5"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -343,12 +343,18 @@ class GM:
 		dist = math.sqrt(dist);
 		return dist;
 
-	def ISD(self,g2):
+	def ISD(self,g2,normed=True):
 		#Integrated Squared Difference
 		#From "Cost-Function-Based Gaussian Mixture Reduction for Target Tracking"
 		#by Jason Williams, Peter Maybeck
 
-		#Note: Can be expensive f
+
+		#Normalized Itegrated Squared Difference
+		#From "Gaussian Mixture reduction based on fuzzy adaptive resonance theory for extended target tracking", 2013
+
+		#NISD(g1,g2) = sqrt((int(g1^2) - 2int(g1*g2) + int(g2^2)) / (int(g1^2) + int(g2^2)))
+		#NISD(g1,g2) = sqrt((int(Jhh) - 2int(Jhr) + int(Jrr)) / (int(Jhh) + int(Jrr)))
+		 
 
 		#Js = Jhh - 2Jhr + Jrr
 		#Jhh = self-likeness for g1
@@ -370,7 +376,10 @@ class GM:
 			for h in g2.Gs:
 				Jhr += g.weight*h.weight*mvn.pdf(g.mean,h.mean,np.matrix(g.var) + np.matrix(h.var));
 
-		Js = Jhh-2*Jhr+Jrr;
+		if(normed):
+			Js = np.sqrt((Jhh-2*Jhr+Jrr)/(Jhh+Jrr));
+		else:
+			Js = Jhh-2*Jhr+Jrr;
 		return Js;
 
 
