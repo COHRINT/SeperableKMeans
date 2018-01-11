@@ -321,9 +321,15 @@ if __name__ == '__main__':
 									testMix.getVars(),'weights': testMix.getWeights()}
 					testMix_ser = json.dumps(testMix_dict)
 
-					for dist in distanceMeasure:
-						for mid_num in intermediate_mixture_size:
-							for fin_num in finalNum:
+					
+					for mid_num in intermediate_mixture_size:
+						for fin_num in finalNum:
+							textMix_runnalls = deepcopy(testMix)
+							runnalls_result = testMix_runnalls.condense(mid_num*fin_num)
+							runnalls_dict = {'means': runnals_result.getMeans(),'vars': \
+								runnals_result.getVars(),'weights': runnals_result.getWeights()}
+							runnalls_ser = json.dumps(runnalls_dict)
+							for dist in distanceMeasure:
 								
 								# run experiment with parameters
 								t = timeit.default_timer()
@@ -343,7 +349,7 @@ if __name__ == '__main__':
 
 								# add results of experiment to database
 								add_result(c,dim,start_num,dist.__name__,mid_num,fin_num,
-											i+1,isd_val,elapsed,testMix_ser,tmp_result_ser)
+											i+1,isd_val,elapsed,testMix_ser,tmp_result_ser,runnalls_ser)
 
 					conn.commit() # commit additions to database after every distance function
 	except KeyboardInterrupt:
