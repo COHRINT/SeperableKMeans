@@ -294,17 +294,17 @@ if __name__ == '__main__':
 	dims = [1,2,4]; 
 	# startNum = [100,400,700];
 	# srating number of mixands
-	startNum = [100] 
+	startNum = [100,400,700,1000] 
 	# distanceMeasure = [euclidianMeanDistance];
 	distanceMeasure = [symKLD,JSD,euclid,EMD,bhatt]
 	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
-	intermediate_mixture_size = [3,4,5]; 
+	intermediate_mixture_size = [4,10,15]; 
 	# finalNum = [10,30,50]; # 10 30 50
-	finalNum = [10];
+	finalNum = [5,10,25];
 	repeat = 10
 
 	# connect to sqlite database
-	c,conn = connect('bigtest2_db.sqlite')
+	c,conn = connect('test7_db.sqlite')
 	# create new table
 	create_table(c,conn,'data')
 
@@ -324,10 +324,13 @@ if __name__ == '__main__':
 					
 					for mid_num in intermediate_mixture_size:
 						for fin_num in finalNum:
-							textMix_runnalls = deepcopy(testMix)
-							runnalls_result = testMix_runnalls.condense(mid_num*fin_num)
-							runnalls_dict = {'means': runnals_result.getMeans(),'vars': \
-								runnals_result.getVars(),'weights': runnals_result.getWeights()}
+							testMix_runnalls = deepcopy(testMix)
+							t_r = timeit.default_timer()
+							testMix_runnalls.condense(mid_num*fin_num)
+							run_elapsed = timeit.default_timer() - t_r
+							runnalls_isd = testMix.ISD(testMix_runnalls)
+							runnalls_dict = {'means': testMix_runnalls.getMeans(),'vars': \
+								testMix_runnalls.getVars(),'weights': testMix_runnalls.getWeights()}
 							runnalls_ser = json.dumps(runnalls_dict)
 							for dist in distanceMeasure:
 								
@@ -349,10 +352,12 @@ if __name__ == '__main__':
 
 								# add results of experiment to database
 								add_result(c,dim,start_num,dist.__name__,mid_num,fin_num,
-											i+1,isd_val,elapsed,testMix_ser,tmp_result_ser,runnalls_ser)
+											i+1,isd_val,elapsed,testMix_ser,tmp_result_ser,
+											runnalls_isd,run_elapsed,runnalls_ser)
 
 					conn.commit() # commit additions to database after every distance function
 	except KeyboardInterrupt:
+		print('\nCommiting changes to database and exiting...')
 		close(c,conn)
 		sys.exit(0)
 
