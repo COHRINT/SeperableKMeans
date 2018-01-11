@@ -19,11 +19,13 @@ import numpy as np
 import time
 import timeit
 import pickle
+import sqlite3
 from testFunctions import *
+from data_handle import *
 
 
 #distance functions
-def euclidianMeanDistance(mix_i,mix_j):
+def euclid(mix_i,mix_j):
 	#General N-dimensional euclidean distance
 	dist = 0;
 	a = mix_i.mean; 
@@ -287,16 +289,16 @@ if __name__ == '__main__':
 
 
 	#Testing Parameters:
-	dims = [1]; 
+	dims = [2]; 
 	# startNum = [100,400,700];
 	# srating number of mixands
 	startNum = [100] 
 	# distanceMeasure = [euclidianMeanDistance];
-	distanceMeasure = [symKLD,JSD,euclidianMeanDistance,EMD,bhatt]
+	distanceMeasure = [symKLD,JSD,euclid,EMD,bhatt]
 	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
 	intermediate_mixture_size = [4]; 
 	# finalNum = [10,30,50]; # 10 30 50
-	finalNum = [3];
+	finalNum = [10];
 
 	save = False
 
@@ -306,41 +308,35 @@ if __name__ == '__main__':
 
 	total_results = {}
 
-	# for dim in dims:
-	# 	for num in startNum:
-	# 		testMix = createRandomMixture(num,dim)
-	# 		for mid_num in intermediate_mixture_size:
-	# 			for fin_num in finalNum:
-	# 				for dist in distanceMeasure:
-	# 					t = timeit.default_timer()
-	# 					tmp_result = theArena(testMix,dist,mid_num,fin_num)
-	# 					elapsed = timeit.default_timer() - t
-	# 					results_dict = {}
-	# 					isd_val = testMix.ISD(tmp_result)
-	# 					result = {'dim': dim, 'starting num': num, 'intermediate num': mid_num, 'final num': fin_num, 'measure': dist.__name__, 'time elapsed': elapsed, \
-	# 								'ISD': isd_val,  'test mix': {'means': testMix.getMeans(),'vars': testMix.getVars(),'weights': testMix.getWeights()}, \
-	# 								'result mix': {'means': tmp_result.getMeans(),'vars': tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
-	# 					total_results[dist.__name__][dim][num][mid_num][fin_num] = (elapsed,isd_val)
-	# 					# total_results.append(result)
-	# 					# print(result)
-	# 					plotResults(testMix,tmp_result)
-	# 					print('{} ISD: {}'.format(dist.__name__,isd_val))
+	# connect to sqlite database
+	c,conn = connect('test3_db.sqlite')
+	# create new table
+	create_table(c,conn)
+
+	for dist in distanceMeasure:
+		total_results[dist.__name__] = {}
+		for dim in dims:
+			total_results[dist.__name__][dim] = {}
+			for start_num in startNum:
+				total_results[dist.__name__][dim][start_num] = {}
+				for mid_num in intermediate_mixture_size:
+					total_results[dist.__name__][dim][start_num][mid_num] = {}
+					for final_num in finalNum:
+						total_results[dist.__name__][dim][start_num][mid_num][final_num] = {}
+
 	for start_num in startNum:
-		total_results[start_num] = {}
 		for dim in dims:
 			testMix = createRandomMixture(start_num,dim)
-			total_results[start_num][dim] = {}
 			for dist in distanceMeasure:
-				total_results[start_num][dim][dist.__name__] = {}
 				for mid_num in intermediate_mixture_size:
-					total_results[start_num][dim][dist.__name__][mid_num] = {}
 					for fin_num in finalNum:
-						# total_results[start_num][dist.__name__][dim][mid_num][fin_num] = {}
 						t = timeit.default_timer()
 						tmp_result = theArena(testMix,dist,mid_num,fin_num)
 						elapsed = timeit.default_timer() - t
 						isd_val = testMix.ISD(tmp_result)
-						total_results[start_num][dim][dist.__name__][mid_num][fin_num] = \
+						add_result(c,dim,start_num,dist.__name__,mid_num,fin_num,isd_val,elapsed)
+						# total_results[start_num][dim][dist.__name__][mid_num][fin_num] = \
+						total_results[dist.__name__][dim][start_num][mid_num][fin_num] = \
 							{'time': elapsed,'ISD': isd_val}#, \
 							# 'test mix': {'means': testMix.getMeans(),'vars': \
 							# 	testMix.getVars(),'weights': testMix.getWeights()}, \
@@ -348,8 +344,7 @@ if __name__ == '__main__':
 							# 	tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
 						# plotResults(testMix,tmp_result)
 
-	# print total_results
-	print(total_results)
+	close(c,conn)
 
 	for dist in distanceMeasure:
 		for dim in dims:
@@ -357,8 +352,8 @@ if __name__ == '__main__':
 				for mid_num in intermediate_mixture_size:
 					for fin_num in finalNum:
 						print('dist: {} \t ISD: {} \t time: {}'.format(dist.__name__,\
-							total_results[start_num][dim][dist.__name__][mid_num][fin_num]['ISD'],\
-							total_results[start_num][dim][dist.__name__][mid_num][fin_num]['time']))
+							total_results[dist.__name__][dim][start_num][mid_num][fin_num]['ISD'],\
+							total_results[dist.__name__][dim][start_num][mid_num][fin_num]['time']))
 
 	# print('-----')
 	# print('lowest ISD: {}'.format())
@@ -369,31 +364,4 @@ if __name__ == '__main__':
 			pickle.dump(total_results,handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-	#Create Test Mixture from params
-	# testMix = createRandomMixture(startNum,dims); 
 
-	# #Run tests
-	# results = [];
-	# # t = time.time()
-	# t = timeit.default_timer()
-	# tmp_result = theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum)
-	# elapsed = timeit.default_timer() - t
-	# results.append(tmp_result); 
-	# print('Time elapsed: {:.4f} seconds'.format(elapsed)) 
-	# print('Time elapsed: {:.4f} seconds'.format(elapsed1)) 
-
-	#Save/display results
-	# plotResults(testMix,tmp_result);
-	# print('JSD ISD: {}'.format(testMix.ISD(results[0]))); 
-
-	# distanceMeasure = KLD;
-
-	# #Run tests
-	# results = [];
-	# results.append(theArena(testMix,distanceMeasure,intermediate_mixture_size,finalNum));  
-
-	# #Save/display results
-	# plotResults(testMix,results[0]);
-	# print('KLD ISD: {}'.format(testMix.ISD(results[0]))); 
-
-	# print('--------------------')
