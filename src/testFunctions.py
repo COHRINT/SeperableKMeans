@@ -97,7 +97,7 @@ def cluster(mixture,distanceFunc,k=4,maxIter = 100):
 		#find the new mean of each cluster
 		newMeans = [0]*k; 
 
-		for i in range(0,4):
+		for i in range(0,k):
 			newMeans[i] = np.array([0]*mixDims); 
 			for g in clusters[i]:
 				newMeans[i] = np.add(newMeans[i],np.divide(convertNormToList(g),clusters[i].size));

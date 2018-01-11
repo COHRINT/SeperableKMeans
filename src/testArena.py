@@ -20,6 +20,8 @@ import time
 import timeit
 import pickle
 import sqlite3
+import json
+import sys
 from testFunctions import *
 from data_handle import *
 
@@ -197,8 +199,8 @@ def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	[posMix,negMix,posNorm,negNorm] = separateAndNormalize(startMix); 
 
 	#cluster
-	posClusters = cluster(posMix,kmeansFunc,numClusters); 
-	negClusters = cluster(negMix,kmeansFunc,numClusters);
+	posClusters = cluster(posMix,kmeansFunc,k=numClusters); 
+	negClusters = cluster(negMix,kmeansFunc,k=numClusters);
 
 	#condense
 	posCon = conComb(posClusters,finalNum); 
@@ -289,79 +291,63 @@ if __name__ == '__main__':
 
 
 	#Testing Parameters:
-	dims = [2]; 
+	dims = [1,2,4]; 
 	# startNum = [100,400,700];
 	# srating number of mixands
 	startNum = [100] 
 	# distanceMeasure = [euclidianMeanDistance];
 	distanceMeasure = [symKLD,JSD,euclid,EMD,bhatt]
 	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
-	intermediate_mixture_size = [4]; 
+	intermediate_mixture_size = [3,4,5]; 
 	# finalNum = [10,30,50]; # 10 30 50
 	finalNum = [10];
-
-	save = False
-
-	results = []
-	isd = []
-	times = []
-
-	total_results = {}
+	repeat = 10
 
 	# connect to sqlite database
-	c,conn = connect('test3_db.sqlite')
+	c,conn = connect('bigtest2_db.sqlite')
 	# create new table
-	create_table(c,conn)
+	create_table(c,conn,'data')
 
-	for dist in distanceMeasure:
-		total_results[dist.__name__] = {}
-		for dim in dims:
-			total_results[dist.__name__][dim] = {}
-			for start_num in startNum:
-				total_results[dist.__name__][dim][start_num] = {}
-				for mid_num in intermediate_mixture_size:
-					total_results[dist.__name__][dim][start_num][mid_num] = {}
-					for final_num in finalNum:
-						total_results[dist.__name__][dim][start_num][mid_num][final_num] = {}
+	loop_count = 1
 
-	for start_num in startNum:
-		for dim in dims:
-			testMix = createRandomMixture(start_num,dim)
-			for dist in distanceMeasure:
-				for mid_num in intermediate_mixture_size:
-					for fin_num in finalNum:
-						t = timeit.default_timer()
-						tmp_result = theArena(testMix,dist,mid_num,fin_num)
-						elapsed = timeit.default_timer() - t
-						isd_val = testMix.ISD(tmp_result)
-						add_result(c,dim,start_num,dist.__name__,mid_num,fin_num,isd_val,elapsed)
-						# total_results[start_num][dim][dist.__name__][mid_num][fin_num] = \
-						total_results[dist.__name__][dim][start_num][mid_num][fin_num] = \
-							{'time': elapsed,'ISD': isd_val}#, \
-							# 'test mix': {'means': testMix.getMeans(),'vars': \
-							# 	testMix.getVars(),'weights': testMix.getWeights()}, \
-							# 'result mix': {'means': tmp_result.getMeans(),'vars': \
-							# 	tmp_result.getVars(), 'weights': tmp_result.getWeights()}}
-						# plotResults(testMix,tmp_result)
+	try:
+		for start_num in startNum:
+			for dim in dims:
+				for i in range(0,repeat):
+					testMix = createRandomMixture(start_num,dim)
+
+					# create serialized str from dictionary with means, variances, weights
+					testMix_dict = {'means': testMix.getMeans(),'vars': \
+									testMix.getVars(),'weights': testMix.getWeights()}
+					testMix_ser = json.dumps(testMix_dict)
+
+					for dist in distanceMeasure:
+						for mid_num in intermediate_mixture_size:
+							for fin_num in finalNum:
+								
+								# run experiment with parameters
+								t = timeit.default_timer()
+								tmp_result = theArena(testMix,dist,mid_num,fin_num)
+								elapsed = timeit.default_timer() - t
+								isd_val = testMix.ISD(tmp_result)
+
+								# create serialized str from dictionary with means, variances, weights
+								tmp_result_dict = {'means': tmp_result.getMeans(),'vars': \
+										tmp_result.getVars(), 'weights': tmp_result.getWeights()}
+								tmp_result_ser = json.dumps(tmp_result_dict)
+
+								# print experiment count for something to look at while running
+								print('-----')
+								print('Loop count: {}'.format(loop_count))
+								loop_count += 1
+
+								# add results of experiment to database
+								add_result(c,dim,start_num,dist.__name__,mid_num,fin_num,
+											i+1,isd_val,elapsed,testMix_ser,tmp_result_ser)
+
+					conn.commit() # commit additions to database after every distance function
+	except KeyboardInterrupt:
+		close(c,conn)
+		sys.exit(0)
 
 	close(c,conn)
-
-	for dist in distanceMeasure:
-		for dim in dims:
-			for start_num in startNum:
-				for mid_num in intermediate_mixture_size:
-					for fin_num in finalNum:
-						print('dist: {} \t ISD: {} \t time: {}'.format(dist.__name__,\
-							total_results[dist.__name__][dim][start_num][mid_num][fin_num]['ISD'],\
-							total_results[dist.__name__][dim][start_num][mid_num][fin_num]['time']))
-
-	# print('-----')
-	# print('lowest ISD: {}'.format())
-	
-
-	if save == True:
-		with open('test_file.pickle','wb') as handle:
-			pickle.dump(total_results,handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-
