@@ -2,6 +2,7 @@
 
 import sqlite3
 import pandas as pd
+import numpy as np
 
 """
 A collection of data handling convenience functions for storing experiment
@@ -15,10 +16,13 @@ def add_result(c,dim,start_num,dist,mid_num,fin_num,run_num,
 
     - params: dictionary of experiment parameter values
     """
-    # print(type(test_mix))
-    # print(test_mix)
-    print('INSERT INTO data VALUES ({},{},{},{},{},{},{},{})'\
-        .format(dim,start_num,dist,mid_num,fin_num,run_num,isd,time))
+    if np.isnan(isd):
+        isd = 99
+    if np.isnan(runnalls_isd):
+        runnalls_isd = 99
+
+    print('INSERT INTO data VALUES ({},{},{},{},{},{},{},{},{},{})'\
+        .format(dim,start_num,dist,mid_num,fin_num,run_num,isd,time,runnalls_isd,runnalls_time))
     test_mix_buf = buffer(test_mix)
     result_mix_buf = buffer(result_mix)
     runnalls_buf = buffer(runnalls_mix)
