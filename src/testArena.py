@@ -73,6 +73,8 @@ def KLD(mix_i,mix_j):
 				,np.linalg.inv(new_mix_j.var)),(np.subtract(new_mix_j.mean,new_mix_i.mean))) \
 				- len(new_mix_j.mean) + np.log(np.linalg.det(new_mix_j.var)/np.linalg.det(new_mix_i.var)))
 
+	del new_mix_i
+	del new_mix_j
 	return div
 
 def symKLD(mix_i,mix_j):
@@ -88,6 +90,8 @@ def symKLD(mix_i,mix_j):
 
 	dist = 0.5*( KLD(new_mix_i,new_mix_j) + KLD(new_mix_j,new_mix_i) )
 
+	del new_mix_i
+	del new_mix_j
 	return dist 
 
 
@@ -120,6 +124,9 @@ def JSD(mix_i,mix_j):
 				- len(new_mix_m.mean) + np.log(np.linalg.det(new_mix_m.var)/np.linalg.det(new_mix_j.var)))
 
 	div = (0.5*div1) + (0.5*div2)
+
+	del new_mix_i
+	del new_mix_j
 	return div
 
 def EMD(mix_i,mix_j):
@@ -151,6 +158,8 @@ def EMD(mix_i,mix_j):
 
 	dist = norm2 - np.trace( np.subtract(np.add(C1,C2),np.dot(2,np.sqrt(mult2)) ) ) 
 
+	del new_mix_i
+	del new_mix_j
 	return dist
 
 def bhatt(mix_i,mix_j):
@@ -183,6 +192,9 @@ def bhatt(mix_i,mix_j):
 			(0.5*np.log(C_det / np.sqrt(C1_det*C2_det)))
 
 	# print(dist)
+
+	del new_mix_i
+	del new_mix_j
 	return dist
 
 
@@ -199,8 +211,8 @@ def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	[posMix,negMix,posNorm,negNorm] = separateAndNormalize(startMix); 
 
 	#cluster
-	posClusters = cluster(posMix,kmeansFunc,k=numClusters); 
-	negClusters = cluster(negMix,kmeansFunc,k=numClusters);
+	posClusters = cluster(posMix,kmeansFunc,k=numClusters,fn=finalNum); 
+	negClusters = cluster(negMix,kmeansFunc,k=numClusters,fn=finalNum);
 
 	#condense
 	posCon = conComb(posClusters,finalNum); 
@@ -213,6 +225,7 @@ def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	negCon.scalerMultiply(negNorm)
 	newMix.addGM(negCon); 
 
+	del startMix
 	if(verbose):
 		plotResults(mix,newMix); 
 	return newMix
@@ -291,10 +304,10 @@ if __name__ == '__main__':
 
 
 	#Testing Parameters:
-	dims = [1,2,4]; 
+	dims = [1]; 
 	# startNum = [100,400,700];
 	# srating number of mixands
-	startNum = [100,400,700,1000] 
+	startNum = [100,1000] 
 	# distanceMeasure = [euclidianMeanDistance];
 	distanceMeasure = [symKLD,JSD,euclid,EMD,bhatt]
 	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
@@ -303,8 +316,13 @@ if __name__ == '__main__':
 	finalNum = [5,10,25];
 	repeat = 10
 
+	start_num_string = ''
+	for s in startNum:
+		start_num_string = start_num_string + str(s)
+	filename = 'dim{}_{}_db.sqlite'.format(dims[0],start_num_string)
+
 	# connect to sqlite database
-	c,conn = connect('test7_db.sqlite')
+	c,conn = connect(filename)
 	# create new table
 	create_table(c,conn,'data')
 
@@ -324,6 +342,8 @@ if __name__ == '__main__':
 					
 					for mid_num in intermediate_mixture_size:
 						for fin_num in finalNum:
+							if mid_num*fin_num > start_num:
+								continue
 							testMix_runnalls = deepcopy(testMix)
 							t_r = timeit.default_timer()
 							testMix_runnalls.condense(mid_num*fin_num)

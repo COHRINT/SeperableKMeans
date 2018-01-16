@@ -11,6 +11,7 @@ Allows for the creation, use, and compression of mixtures
 of multivariate normals, or Gaussian Mixture Models (GMM).
 
 Version 1.3.5: added normalized ISD
+Version 1.3.6: removed warning filtering
 
 ***********************************************************
 '''
@@ -20,7 +21,7 @@ __author__ = "Luke Burks"
 __copyright__ = "Copyright 2016, Cohrint"
 __credits__ = ["Luke Burks", "Nisar Ahmed"]
 __license__ = "GPL"
-__version__ = "1.3.5"
+__version__ = "1.3.6"
 __maintainer__ = "Luke Burks"
 __email__ = "luke.burks@colorado.edu"
 __status__ = "Development"
@@ -45,7 +46,7 @@ from numpy.linalg import inv,det
 
 class Gaussian:
 	def __init__(self,u = None,sig = None,w=1):
-		warnings.filterwarnings("ignore")
+		#warnings.filterwarnings("ignore")
 		if(u is None):
 			self.mean = [0,0];
 		else:
