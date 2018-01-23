@@ -44,7 +44,7 @@ def separateAndNormalize(mix):
 
 	return [posMix,negMix,posSum,negSum]; 
 
-def cluster(mixture,distanceFunc,k=4,maxIter = 100,fn=10):
+def cluster(mixture,distanceFunc,k=4,maxIter = 100):
 	'''
 	Condenses mixands by first clustering them into K groups, using
 	k-means. Then each group is condensed to a predefined number N using 
@@ -58,9 +58,6 @@ def cluster(mixture,distanceFunc,k=4,maxIter = 100,fn=10):
 	highInit: upper bound on placement of initial grouping means
 
 	'''
-
-	if(mixture.size <= k*fn):
-		return mixture;
 
 	mixDims = len(mixture[0].mean) + len(mixture[0].var)*len(mixture[0].var); 
 

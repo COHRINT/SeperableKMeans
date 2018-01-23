@@ -211,19 +211,19 @@ def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	[posMix,negMix,posNorm,negNorm] = separateAndNormalize(startMix); 
 
 	#cluster
-	posClusters = cluster(posMix,kmeansFunc,k=numClusters,fn=finalNum); 
-	negClusters = cluster(negMix,kmeansFunc,k=numClusters,fn=finalNum);
+	posClusters = cluster(posMix,kmeansFunc,k=numClusters); 
+	#negClusters = cluster(negMix,kmeansFunc,k=numClusters);
 
 	#condense
 	posCon = conComb(posClusters,finalNum); 
-	negCon = conComb(negClusters,finalNum); 
+	#negCon = conComb(negClusters,finalNum); 
 
 	#recombine
 	newMix = GM(); 
 	posCon.scalerMultiply(posNorm);
 	newMix.addGM(posCon); 
-	negCon.scalerMultiply(negNorm)
-	newMix.addGM(negCon); 
+	#negCon.scalerMultiply(negNorm)
+	#newMix.addGM(negCon); 
 
 	del startMix
 	if(verbose):
@@ -304,10 +304,10 @@ if __name__ == '__main__':
 
 
 	#Testing Parameters:
-	dims = [1]; 
+	dims = [4]; 
 	# startNum = [100,400,700];
 	# srating number of mixands
-	startNum = [100,1000] 
+	startNum = [400,700] 
 	# distanceMeasure = [euclidianMeanDistance];
 	distanceMeasure = [symKLD,JSD,euclid,EMD,bhatt]
 	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
