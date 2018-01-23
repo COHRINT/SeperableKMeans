@@ -69,6 +69,81 @@ def close(c,conn,commit=True):
     c.close()
     conn.close()
 
+def load_data(filename,tablename):
+    """
+    Load all data from test results sqlite database using sql query to pandas
+    dataframe.
+
+    Params:
+        - filename: string, database filename
+        - tablename: string, name of table in database from which to pull data
+
+    Returns:
+        - data: pandas dataframe containing all data
+    """
+    conn = sqlite3.connect(filename)
+    data = pd.read_sql_query("SELECT * FROM '{}'".format(tablename),conn)
+    conn.close()
+    return data
+
+def grab_data(data,dims=None,sn=None,mn=None,fn=None,dist=None):
+    """
+    Grab data with specified parameters from tests results dataframe
+
+    Params:
+        - data: pandas data frame containg all test data (returned from fxn
+                load_data())
+        - dim: desired dimension of data
+        - sn: desired starting number of mixands
+        - mn: desired middle number of clusters
+        - fn: desired final number of mixands per cluster
+        - dist: desired distance metric or metrics
+    """
+    params_df = pd.DataFrame(columns=['dim','start_num','dist','mid_num','fin_num',
+                                        'run_num','ISD','time','test_mix','result_mix',
+                                        'runnalls_ISD','runnalls_time','runnalls_mix'])
+
+    # make sure passed parameters are lists to iterate through,
+    # if passed param is None, iterate through all params
+    if dims is None:
+        dims = [1,2,4]
+    elif dims is not list:
+        dims = [dims]
+
+    if sn is None:
+        sn = [100,400,700,1000]
+    elif dims is not list:
+        sn = [sn]
+
+    if mn is None:
+        mn = [4,10,15]
+    elif mn is not list:
+        mn = [mn]
+    
+    if fn is None:
+        fn = [5,10,25]
+    elif fn is not list:
+        fn = [fn]
+
+    if dist is None:
+        dist = ['symKLD','JSD','euclid','EMD','bhatt']
+    elif dist is not list:
+        dist = [dist]
+
+    # iterate through param lists and append grabbed data
+    for dim in dims:
+        for start_num in sn:
+            for mid_num in mn:
+                for fin_num in fn:
+                    for distance in dist:
+
+                        new_df = data[(data['dim'] == dim) & (data['start_num'] == start_num) &
+                                    (data['mid_num'] == mid_num) & (data['fin_num'] == fin_num) &
+                                    (data['dist'] == distance)]
+                        params_df = params_df.append(new_df)
+                        del new_df
+    return params_df
+
 
 if __name__ == "__main__":
     fn = 'test_db.sqlite'
