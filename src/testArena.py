@@ -250,22 +250,29 @@ def plotResults(start,end):
 	plt.show(); 
 
 
-def createRandomMixture(size = 200,dims = 2,df=8):
+def createRandomMixture(size = 200,dims = 2):
 	testMix = GM(); 
 
 	for i in range(0,size):
-		testMix.addG(sampleWishart(dims,df)); 
+		testMix.addG(sampleWishart(dims)); 
 	testMix.normalizeWeights();
 	return testMix;
 
 
-def sampleWishart(dims = 2,df = 8):
-	sigPrior = np.diag(np.ones(dims))*1;
-	#cholesky = np.linalg.cholesky(sigPrior); 
-	X = np.dot(sigPrior,np.random.normal(size=(dims,df))); 
+def sampleWishart(dims = 2):
+	if(dims == 1):
+		sigPrior = np.diag(np.ones(dims))*10;
+	elif(dims == 2):
+		sigPrior = np.diag(np.ones(dims))*2;
+	else:
+		sigPrior = np.diag(np.ones(dims));  
+
+	df = dims; 
+	cholesky = np.linalg.cholesky(sigPrior); 
+	X = np.dot(cholesky,np.random.normal(size=(dims,df))); 
 	sigma = np.linalg.inv(np.dot(X,X.T)); 
 
-	weight = np.sqrt(np.random.random());  
+	weight = np.random.random()**2;  
 
 	# muPrior = np.random.random(size=dims)*10;
 	# fudgeFactor = 10; #higher causes more spread
