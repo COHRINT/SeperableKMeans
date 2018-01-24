@@ -250,12 +250,13 @@ def plotResults(start,end):
 	plt.show(); 
 
 
-def createRandomMixture(size = 200,dims = 2):
+def createRandomMixture(size,dims = 2):
 	testMix = GM(); 
 
 	for i in range(0,size):
 		testMix.addG(sampleWishart(dims)); 
 	testMix.normalizeWeights();
+	#testMix.clean();
 	return testMix;
 
 
@@ -265,7 +266,7 @@ def sampleWishart(dims = 2):
 	elif(dims == 2):
 		sigPrior = np.diag(np.ones(dims))*2;
 	else:
-		sigPrior = np.diag(np.ones(dims));  
+		sigPrior = np.diag(np.ones(dims))*0.4;  
 
 	df = dims; 
 	cholesky = np.linalg.cholesky(sigPrior); 
@@ -283,6 +284,12 @@ def sampleWishart(dims = 2):
 	mu = []; 
 	for i in range(0,dims):
 		mu.append(np.random.random()*(highInit[i]-lowInit[i]) + lowInit[i]); 
+
+	if(dims==1):
+		mu=mu[0]
+		sigma = sigma.tolist()[0][0]; 
+	else:
+		sigma = sigma.tolist(); 
 
 	return Gaussian(mu,sigma,weight); 
 
