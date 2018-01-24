@@ -373,7 +373,7 @@ if __name__ == '__main__':
 		start_num_string = start_num_string + str(s)
 	filename = 'dim{}_{}_db_{}.sqlite'.format(dim_string,start_num_string,datetime.date.today())
 	print('\nCreating new database {} with table \'{}\'\n'.format(filename,'data'))
-	sys.exit(0)
+	# sys.exit(0)
 	# connect to sqlite database
 	c,conn = connect(filename)
 	# create new table
