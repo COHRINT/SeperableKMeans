@@ -285,11 +285,7 @@ def sampleWishart(dims = 2):
 	for i in range(0,dims):
 		mu.append(np.random.random()*(highInit[i]-lowInit[i]) + lowInit[i]); 
 
-	if(dims==1):
-		mu=mu[0]
-		sigma = sigma.tolist()[0][0]; 
-	else:
-		sigma = sigma.tolist(); 
+	sigma=sigma.tolist();
 
 	return Gaussian(mu,sigma,weight); 
 
