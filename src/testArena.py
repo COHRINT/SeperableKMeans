@@ -17,6 +17,7 @@ from gaussianMixtures import GM,Gaussian
 from copy import deepcopy
 import numpy as np
 import time
+import datetime
 import timeit
 import pickle
 import sqlite3
@@ -299,25 +300,73 @@ def get_pos_mix(mix):
 
 if __name__ == '__main__':
 
+	test_num = sys.argv[1]
+	try:
+		test_num = int(test_num)
+	except ValueError as e:
+		print('Command line argument must be integer')
+		test_num = 0
 
-	#Testing Parameters:
-	dims = [4]; 
-	# startNum = [100,400,700];
-	# srating number of mixands
-	startNum = [400,700] 
-	# distanceMeasure = [euclidianMeanDistance];
+	while (test_num > 6 and test_num != 99) or (test_num < 1):
+		print('Command line argument must be a test case number between 1 and 6.')
+		print('possible tests: test_num = 1: dim = 1, startNum = 100, 1000\n \
+			test_num = 2: 	dim = 1, startNum = 400, 700\n \
+			test_num = 3:	dim = 2, startNum = 100, 1000\n \
+			test_num = 4:	dim = 2, startNum = 400, 700\n \
+			test_num = 5:	dim = 4, startNum = 100, 1000\n \
+			test_num = 6:	dim = 4, startNum = 400, 700\n \
+			test_num = 99:	all paramters')
+		test_num = raw_input('Enter new test case number between one and six: ')
+		test_num = int(test_num)
+	# possible tests: test_num = 1: dim = 1, startNum = 100, 1000
+	#		test_num = 2: 	dim = 1, startNum = 400, 700 
+	#		test_num = 3:	dim = 2, startNum = 100, 1000 
+	#		test_num = 4:	dim = 2, startNum = 400, 700 
+	#		test_num = 5:	dim = 4, startNum = 100, 1000 
+	#		test_num = 6:	dim = 4, startNum = 400, 700 
+
+	# split up parameters for multiple processes
+	if test_num == 1:
+		dims = [1]
+		startNum = [100,1000]
+	elif test_num == 2:
+		dims = [1]
+		startNum = [400,700]
+	elif test_num == 3:
+		dims = [2]
+		startNum = [100,1000]
+	elif test_num == 4:
+		dims = [2]
+		startNum [400,700]
+	elif test_num == 5:
+		dims = [4]
+		startNum = [100,1000]
+	elif test_num == 6:
+		dims = [4]
+		startNum = [400,700]
+	elif test_num == 99:
+		dims = [1,2,4]
+		startNum = [100,400,700,1000]
+
+	# dims = [4]; 
+	# starting number of mixands
+	# startNum = [400,700] 
+
+	# common for all experiments
 	distanceMeasure = [symKLD,JSD,euclid,EMD,bhatt]
-	# distanceMeasure = [euclidianMeanDistance,euclidSquared,KLD,JSD];	
-	intermediate_mixture_size = [4,10,15]; 
-	# finalNum = [10,30,50]; # 10 30 50
-	finalNum = [5,10,25];
+	intermediate_mixture_size = [4,10,15]
+	finalNum = [5,10,25]
 	repeat = 10
 
+	dim_string = ''
+	for d in dims:
+		dim_string = dim_string + str(d)
 	start_num_string = ''
 	for s in startNum:
 		start_num_string = start_num_string + str(s)
-	filename = 'dim{}_{}_db.sqlite'.format(dims[0],start_num_string)
-
+	filename = 'dim{}_{}_db_{}.sqlite'.format(dim_string,start_num_string,datetime.date.today())
+	print('\nCreating new database {} with table \'{}\'\n'.format(filename,'data'))
+	sys.exit(0)
 	# connect to sqlite database
 	c,conn = connect(filename)
 	# create new table
