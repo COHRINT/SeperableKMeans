@@ -249,37 +249,34 @@ def plotResults(start,end):
 	plt.show(); 
 
 
-def createRandomMixture(size = 200,dims = 2):
+def createRandomMixture(size = 200,dims = 2,df=8):
 	testMix = GM(); 
 
-	lowInit = [0]*dims; 
-	highInit = [50]*dims;
-
 	for i in range(0,size):
-		tmp = []; 
-		#get a random mean
-		for j in range(0,dims):
-			tmp.append(np.random.random()*(highInit[j]-lowInit[j]) + lowInit[j]); 
-		#get a random covariance
-		#MUST BE POSITIVE SEMI DEFINITE and symmetric
-		a = scirand.rand(dims,dims)*1;
-
-		#keep things from getting near singular
-		for j in range(0,len(a)):
-			a[j][j] = (a[j][j]+1)**2; 
-
-		b = np.dot(a,a.transpose()); 
-		c = (b+b.T)/2; 
-		
-		d = c.flatten().tolist(); 
-		for j in range(0,len(d)):
-			tmp.append(d[j]); 
-		weight = np.random.random()*5; 
-		g = convertListToNorm(tmp); 
-		g.weight = weight; 
-		testMix.addG(g); 
-		
+		testMix.addG(sampleWishart(dims,df)); 
+	testMix.normalizeWeights();
 	return testMix;
+
+
+def sampleWishart(dims = 2,df = 8):
+	sigPrior = np.diag(np.ones(dims))*1;
+	#cholesky = np.linalg.cholesky(sigPrior); 
+	X = np.dot(sigPrior,np.random.normal(size=(dims,df))); 
+	sigma = np.linalg.inv(np.dot(X,X.T)); 
+
+	weight = np.sqrt(np.random.random());  
+
+	# muPrior = np.random.random(size=dims)*10;
+	# fudgeFactor = 10; #higher causes more spread
+	# mu = np.random.multivariate_normal(muPrior,fudgeFactor*sigma); 
+
+	lowInit = [0]*dims; 
+	highInit = [10]*dims;
+	mu = []; 
+	for i in range(0,dims):
+		mu.append(np.random.random()*(highInit[i]-lowInit[i]) + lowInit[i]); 
+
+	return Gaussian(mu,sigma,weight); 
 
 # def get_data(param_list):
 
