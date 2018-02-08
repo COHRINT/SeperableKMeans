@@ -216,7 +216,9 @@ def theArena(mix,kmeansFunc,numClusters = 4,finalNum = 5,verbose = False):
 	#negClusters = cluster(negMix,kmeansFunc,k=numClusters);
 
 	#condense
-	posCon = conComb(posClusters,finalNum); 
+	finalTotalDesired = numClusters*finalNum; 
+	startingSize = mix.size; 
+	posCon = conComb(posClusters,finalNum,finalTotalDesired,startingSize); 
 	#negCon = conComb(negClusters,finalNum); 
 
 	#recombine

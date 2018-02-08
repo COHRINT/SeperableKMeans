@@ -124,10 +124,11 @@ def cluster(mixture,distanceFunc,k=4,maxIter = 100):
 				means[i] = tmp;
 	return clusters;
 
-def conComb(mixtures,max_num_mixands):
+def conComb(mixtures,max_num_mixands,finalTotalDesired,startingSize):
 	newMix = GM(); 
 	for gm in mixtures:
-		d = deepcopy(condense(gm,max_num_mixands)); 
+		condensationTarget = max(1,(np.floor(gm.size)*finalTotalDesired)/startingSize); 
+		d = deepcopy(condense(gm,condensationTarget)); 
 		# print(type(d))
 		# NOTE: this comment apparently needs to be here to not make d an int...
 		try:
