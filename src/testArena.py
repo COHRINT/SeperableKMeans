@@ -275,7 +275,7 @@ def sampleWishart(dims = 2):
 	X = np.dot(cholesky,np.random.normal(size=(dims,df))); 
 	sigma = np.linalg.inv(np.dot(X,X.T)); 
 
-	weight = np.random.random()**2;  
+	weight = np.random.random();  
 
 	# muPrior = np.random.random(size=dims)*10;
 	# fudgeFactor = 10; #higher causes more spread
