@@ -263,12 +263,7 @@ def createRandomMixture(size,dims = 2):
 
 
 def sampleWishart(dims = 2):
-	if(dims == 1):
-		sigPrior = np.diag(np.ones(dims))*2;
-	elif(dims == 2):
-		sigPrior = np.diag(np.ones(dims))*2;
-	else:
-		sigPrior = np.diag(np.ones(dims))*2;  
+	sigPrior = np.diag(np.ones(dims))*2;
 
 	df = dims; 
 	cholesky = np.linalg.cholesky(sigPrior); 
